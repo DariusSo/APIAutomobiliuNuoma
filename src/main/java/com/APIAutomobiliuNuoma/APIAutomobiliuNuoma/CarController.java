@@ -11,13 +11,17 @@ public class CarController {
     public static List<Car> carList = new ArrayList<>();
 
     @PostMapping("/addCar")
-    public void addCar(@RequestBody Car car) throws SQLException {
+    public String addCar(@RequestBody Car car) throws SQLException {
+        if(car.manufacturer == null || car.model == null || car.year == 0){
+            return "Truksta paramentru.";
+        }
         PreparedStatement ps = manageSQL.SQLConnection("INSERT INTO car (manufacturer, model, year, available) VALUES (?,?,?,?)");
         ps.setString(1, car.manufacturer);
         ps.setString(2, car.model);
         ps.setInt(3, car.year);
         ps.setBoolean(4, car.available);
         ps.executeUpdate();
+        return "Masina sekmingai prideta.";
     }
     @GetMapping("/getCars")
     public List<Car> getCars() throws SQLException {
@@ -25,7 +29,7 @@ public class CarController {
         PreparedStatement ps = manageSQL.SQLConnection("SELECT * FROM car");
         ResultSet rs = ps.executeQuery();
         while (rs.next()){
-            Car car = new Car(rs.getString("manufacturer"), rs.getString("model"),
+            Car car = new Car(rs.getInt("car_id"), rs.getString("manufacturer"), rs.getString("model"),
                     rs.getInt("year"), rs.getBoolean("available"));
             cars.add(car);
         }
@@ -41,10 +45,16 @@ public class CarController {
             car = new Car(rs.getInt("car_id"), rs.getString("manufacturer"), rs.getString("model"),
                     rs.getInt("year"), rs.getBoolean("available"));
         }
+        if (car == null){
+            System.out.println("Nera masinos su tokiu id.");
+        }
         return car;
     }
     @PutMapping("/renewCarInfo")
-    public void renewCarInfo(@RequestBody Car car) throws SQLException {
+    public static String renewCarInfo(@RequestBody Car car) throws SQLException {
+        if(car.manufacturer == null || car.model == null || car.year == 0){
+            return "Truksta paramentru.";
+        }else{
             PreparedStatement ps = manageSQL.SQLConnection("UPDATE car " +
                     "SET manufacturer = ?," +
                     "model = ?," +
@@ -57,12 +67,21 @@ public class CarController {
             ps.setBoolean(4, car.available);
             ps.setInt(5, car.id);
             ps.executeUpdate();
+            return "Automobilio informacija atnaujinta";
+        }
     }
     @DeleteMapping("/removeCar")
-    public void removeCar(int id) throws SQLException {
-        PreparedStatement ps = manageSQL.SQLConnection("DELETE FROM car WHERE car_id = ?");
-        ps.setInt(1, id);
-        ps.executeUpdate();
+    public String removeCar(int id) throws SQLException {
+        List<Car> carList = getCars();
+        for (Car c : carList){
+            if(id == c.id){
+                PreparedStatement ps = manageSQL.SQLConnection("DELETE FROM car WHERE car_id = ?");
+                ps.setInt(1, id);
+                ps.executeUpdate();
+                return "Automobilis pasalintas.";
+            }
+        }
+        return "Automobilis su tokiu id nerastas.";
     }
 
 

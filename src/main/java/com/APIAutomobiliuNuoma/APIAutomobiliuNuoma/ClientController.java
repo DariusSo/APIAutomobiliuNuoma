@@ -23,16 +23,20 @@ public class ClientController {
         return clients;
     }
     @PostMapping("/addClient")
-    public void addClient(@RequestBody Client c) throws SQLException {
+    public String addClient(@RequestBody Client c) throws SQLException {
+        if(c.firstName == null || c.lastName == null || c.email == null || c.phone == null){
+            return "Truksta paramentru";
+        }
         PreparedStatement ps = manageSQL.SQLConnection("INSERT INTO client (first_name, last_name, email, phone) VALUES (?,?,?,?)");
         ps.setString(1, c.firstName);
         ps.setString(2, c.lastName);
         ps.setString(3, c.email);
         ps.setString(4, c.phone);
         ps.executeUpdate();
+        return "Klientas pridetas";
     }
     @GetMapping("/getClientById")
-    public Client getClient(int id) throws SQLException {
+    public static Client getClient(int id) throws SQLException {
         Client client = null;
         PreparedStatement ps = manageSQL.SQLConnection("SELECT * FROM client WHERE client_id = ?");
         ps.setInt(1, id);
@@ -40,6 +44,9 @@ public class ClientController {
         if(rs.next()){
             client = new Client(rs.getInt("client_id"), rs.getString("first_name"), rs.getString("last_name"), rs.getString("email"), rs.getString("phone"));
 
+        }
+        if (client == null){
+            System.out.println("Toks klientas nerastas");
         }
         return client;
     }
@@ -59,10 +66,17 @@ public class ClientController {
         ps.executeUpdate();
     }
     @DeleteMapping("/removeClient")
-    public void removeClient(int id) throws SQLException {
-        PreparedStatement ps = manageSQL.SQLConnection("DELETE FROM client WHERE client_id = ?");
-        ps.setInt(1, id);
-        ps.executeUpdate();
+    public String removeClient(int id) throws SQLException {
+        List<Client> clientList = getClients();
+        for(Client c : clientList){
+            if (c.id == id){
+                PreparedStatement ps = manageSQL.SQLConnection("DELETE FROM client WHERE client_id = ?");
+                ps.setInt(1, id);
+                ps.executeUpdate();
+                return "Klientas sekmingai pasalintas";
+            }
+        }
+        return "Tokio kliento nera";
     }
 
 }
