@@ -10,5 +10,4 @@ public class ApiAutomobiliuNuomaApplication {
 		SpringApplication.run(ApiAutomobiliuNuomaApplication.class, args);
 
 	}
-
 }

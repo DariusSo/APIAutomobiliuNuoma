@@ -14,9 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@RequestMapping("/rentals")
 public class RentalController {
 
-    @PostMapping("/registerRental")
+    @PostMapping
     public String registerRental(@RequestBody Rental r) throws SQLException {
 
         Car car = CarController.getCarById(r.carId);
@@ -27,7 +28,6 @@ public class RentalController {
             return "Client with id " + r.clientId + " doesn't exist.";
         }else{
             String s = String.valueOf(r.rentalDate);
-            LocalDate rental = LocalDate.parse("8-Jan-2020", DateTimeFormatter.ofPattern("d-MMM-yyyy"));
             PreparedStatement ps = manageSQL.SQLConnection("INSERT INTO rental (car_id, client_id, rental_date, return_date) VALUES (?,?,?,?)");
             ps.setInt(1, r.carId);
             ps.setInt(2, r.clientId);
@@ -38,7 +38,7 @@ public class RentalController {
             return "Registered.";
         }
     }
-    @GetMapping("/getRentals")
+    @GetMapping
     public List<Rental> getRentals() throws SQLException {
         List<Rental> rentals = new ArrayList<>();
         PreparedStatement ps = manageSQL.SQLConnection("SELECT * FROM rental");
@@ -51,8 +51,8 @@ public class RentalController {
         }
         return rentals;
     }
-    @GetMapping("/getRentalById")
-    public static Rental getClient(int id) throws SQLException {
+    @GetMapping("/{id}")
+    public static Rental getClient(@PathVariable int id) throws SQLException {
         Rental rental = null;
         PreparedStatement ps = manageSQL.SQLConnection("SELECT * FROM rental WHERE rental_id = ?");
         ps.setInt(1, id);
@@ -64,8 +64,8 @@ public class RentalController {
         }
         return rental;
     }
-    @PutMapping("/renewReturnDate")
-    public void renewReturnDate(@RequestBody Rental r, int id) throws SQLException {
+    @PutMapping("/{id}")
+    public void renewReturnDate(@RequestBody Rental r, @PathVariable int id) throws SQLException {
         PreparedStatement ps = manageSQL.SQLConnection("UPDATE rental " +
                 "SET return_date = ?" +
                 " WHERE rental_id = ?");
@@ -73,8 +73,8 @@ public class RentalController {
         ps.setInt(2, id);
         ps.executeUpdate();
     }
-    @DeleteMapping("/removeRental")
-    public String removeClient(int id) throws SQLException {
+    @DeleteMapping("/{id}")
+    public String removeClient(@PathVariable int id) throws SQLException {
         List<Rental> rentalList = getRentals();
         for(Rental r : rentalList){
             if (r.id == id){
@@ -86,4 +86,26 @@ public class RentalController {
         }
         return "Nerasta";
     }
+    @GetMapping("/period")
+    public static List<Rental> rentalsPeriod(LocalDate fromDate, LocalDate toDate) throws SQLException {
+        List<Rental> rentals = new ArrayList<>();
+        List<Rental> comparedRentals = new ArrayList<>();
+        PreparedStatement ps = manageSQL.SQLConnection("SELECT * FROM rental");
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()){
+            LocalDate rentalDate = LocalDate.parse(rs.getString("rental_date"), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate returnDate = LocalDate.parse(rs.getString("return_date"), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            Rental rental = new Rental(rs.getInt("rental_id"), rs.getInt("car_id"), rs.getInt("client_id"), rentalDate, returnDate);
+            rentals.add(rental);
+        }
+        for(Rental r : rentals){
+            if(r.rentalDate.isAfter(fromDate) && r.returnDate.isBefore(toDate)){
+                comparedRentals.add(r);
+            }
+        }
+        return comparedRentals;
+
+    }
+
+
 }
